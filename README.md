@@ -478,14 +478,12 @@ self_healing_distributed_cache/
 ├── src/
 │   ├── cache.ts
 │   ├── consistentHash.ts
-│   ├── node.ts
-│   ├── nodeRegistry.ts
-│   ├── router.ts
+│   ├── dashboard.ts
 │   ├── index.ts
-│   ├── testRing.ts
-│   ├── testRouter.ts
-│   └── testSync.ts
+│   ├── node.ts
+│   ├── router.ts
 │
+├── dashboard.html
 ├── Dockerfile
 ├── docker-compose.yml
 ├── .dockerignore
@@ -559,25 +557,24 @@ docker ps
 
 ---
 
-# 🧪 Testing
+# 🧪 Dashboard & Testing
 
-Test consistent hashing:
-
-```bash
-npx tsx src/testRing.ts
-```
-
-Test router:
+To interact with the cache cluster, view live metrics, and test self-healing visually, start the dashboard server:
 
 ```bash
-npx tsx src/testRouter.ts
+npx tsx src/dashboard.ts
 ```
 
-Test replication and cache operations:
-
-```bash
-npx tsx src/testSync.ts
+Then, open your browser and navigate to:
+```text
+http://localhost:4000
 ```
+
+From the dashboard, you can:
+- **Set/Get/Delete** cache keys
+- Observe **consistent hashing** and **replication** in action
+- View **live stats** (hits, misses, evictions)
+- Simulate failures by starting and stopping cache nodes with the click of a button
 
 ---
 
