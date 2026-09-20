@@ -1,0 +1,35 @@
+services:
+
+  cache1:
+    build: .
+    container_name: cache1
+    environment:
+      NODE_PORT: "3001"
+    ports:
+      - "3001:3001"
+    networks:
+      - cache-network
+
+  cache2:
+    build: .
+    container_name: cache2
+    environment:
+      NODE_PORT: "3002"
+    ports:
+      - "3002:3002"
+    networks:
+      - cache-network
+
+  cache3:
+    build: .
+    container_name: cache3
+    environment:
+      NODE_PORT: "3003"
+    ports:
+      - "3003:3003"
+    networks:
+      - cache-network
+
+networks:
+  cache-network:
+    driver: bridge

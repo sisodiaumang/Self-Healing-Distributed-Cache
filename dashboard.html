@@ -1,0 +1,2287 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>
+    Self-Healing Distributed Cache
+</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+
+    margin: 0;
+
+    background:
+        #070b14;
+
+    color:
+        #e8edf7;
+
+    font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+}
+
+.container {
+
+    width: min(1400px, 94%);
+
+    margin: auto;
+
+    padding: 30px 0 60px;
+
+}
+
+.header {
+
+    display: flex;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        center;
+
+    margin-bottom: 28px;
+
+}
+
+.title h1 {
+
+    margin: 0;
+
+    font-size: 32px;
+
+    letter-spacing:
+        -1px;
+
+}
+
+.title p {
+
+    margin:
+        8px 0 0;
+
+    color:
+        #8993a7;
+
+}
+
+.system-status {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    padding:
+        10px 15px;
+
+    border:
+        1px solid #20293a;
+
+    border-radius:
+        999px;
+
+    background:
+        #0d1320;
+
+}
+
+.dot {
+
+    width: 9px;
+
+    height: 9px;
+
+    border-radius:
+        50%;
+
+    background:
+        #38d996;
+
+    box-shadow:
+        0 0 12px
+        rgba(56,217,150,.8);
+
+}
+
+.dot.down {
+
+    background:
+        #ff5f6d;
+
+    box-shadow:
+        0 0 12px
+        rgba(255,95,109,.8);
+
+}
+
+.dot.warning {
+
+    background:
+        #f6c453;
+
+    box-shadow:
+        0 0 12px
+        rgba(246,196,83,.8);
+
+}
+
+
+/* =========================
+   CARDS
+========================= */
+
+.card {
+
+    background:
+        #0d1320;
+
+    border:
+        1px solid #20293a;
+
+    border-radius:
+        16px;
+
+    padding:
+        20px;
+
+}
+
+.section-title {
+
+    margin:
+        0 0 16px;
+
+    font-size:
+        18px;
+
+}
+
+
+/* =========================
+   NODE GRID
+========================= */
+
+.nodes {
+
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap:
+        18px;
+
+}
+
+.node-card {
+
+    position:
+        relative;
+
+    overflow:
+        hidden;
+
+}
+
+.node-top {
+
+    display:
+        flex;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        center;
+
+}
+
+.node-name {
+
+    font-size:
+        20px;
+
+    font-weight:
+        700;
+
+}
+
+.node-port {
+
+    color:
+        #758198;
+
+    font-size:
+        13px;
+
+    margin-top:
+        3px;
+
+}
+
+.status {
+
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+
+    gap:
+        7px;
+
+    font-size:
+        13px;
+
+    font-weight:
+        600;
+
+}
+
+.node-status-dot {
+
+    width:
+        8px;
+
+    height:
+        8px;
+
+    border-radius:
+        50%;
+
+    background:
+        #38d996;
+
+}
+
+.node-status-dot.down {
+
+    background:
+        #ff5f6d;
+
+}
+
+.node-status-dot.recovering {
+
+    background:
+        #f6c453;
+
+}
+
+.node-info {
+
+    display:
+        grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap:
+        10px;
+
+    margin-top:
+        22px;
+
+}
+
+.info-box {
+
+    background:
+        #080d17;
+
+    border:
+        1px solid #1c2535;
+
+    border-radius:
+        10px;
+
+    padding:
+        12px;
+
+}
+
+.info-label {
+
+    color:
+        #69758b;
+
+    font-size:
+        12px;
+
+}
+
+.info-value {
+
+    margin-top:
+        5px;
+
+    font-size:
+        15px;
+
+    font-weight:
+        600;
+
+}
+
+.node-actions {
+
+    display:
+        flex;
+
+    gap:
+        9px;
+
+    margin-top:
+        18px;
+
+}
+
+button {
+
+    border:
+        none;
+
+    border-radius:
+        9px;
+
+    padding:
+        10px 15px;
+
+    font-weight:
+        600;
+
+    cursor:
+        pointer;
+
+    color:
+        white;
+
+    background:
+        #1d2738;
+
+    transition:
+        .15s;
+
+}
+
+button:hover {
+
+    transform:
+        translateY(-1px);
+
+    background:
+        #29364d;
+
+}
+
+button:disabled {
+
+    opacity:
+        .45;
+
+    cursor:
+        not-allowed;
+
+    transform:
+        none;
+
+}
+
+.stop-btn {
+
+    background:
+        #4a1f29;
+
+}
+
+.stop-btn:hover {
+
+    background:
+        #632833;
+
+}
+
+.start-btn {
+
+    background:
+        #164b3b;
+
+}
+
+.start-btn:hover {
+
+    background:
+        #1c634d;
+
+}
+
+
+/* =========================
+   LAYOUT
+========================= */
+
+.main-grid {
+
+    display:
+        grid;
+
+    grid-template-columns:
+        1.4fr .8fr;
+
+    gap:
+        18px;
+
+    margin-top:
+        18px;
+
+}
+
+.stack {
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    gap:
+        18px;
+
+}
+
+
+/* =========================
+   TOPOLOGY
+========================= */
+
+.topology {
+
+    min-height:
+        400px;
+
+}
+
+.ring {
+
+    position:
+        relative;
+
+    width:
+        330px;
+
+    height:
+        330px;
+
+    margin:
+        20px auto;
+
+    border:
+        2px dashed #344057;
+
+    border-radius:
+        50%;
+
+}
+
+.ring-center {
+
+    position:
+        absolute;
+
+    left:
+        50%;
+
+    top:
+        50%;
+
+    transform:
+        translate(-50%, -50%);
+
+    width:
+        120px;
+
+    height:
+        120px;
+
+    border:
+        1px solid #29364d;
+
+    border-radius:
+        50%;
+
+    background:
+        #0a101b;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    text-align:
+        center;
+
+}
+
+.ring-center strong {
+
+    font-size:
+        17px;
+
+}
+
+.ring-center span {
+
+    color:
+        #77839a;
+
+    font-size:
+        11px;
+
+    margin-top:
+        4px;
+
+}
+
+.ring-node {
+
+    position:
+        absolute;
+
+    width:
+        70px;
+
+    height:
+        70px;
+
+    border:
+        2px solid #3a485f;
+
+    border-radius:
+        50%;
+
+    background:
+        #101827;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    justify-content:
+        center;
+
+    align-items:
+        center;
+
+    font-weight:
+        700;
+
+    font-size:
+        14px;
+
+    transition:
+        .25s;
+
+}
+
+.ring-node.healthy {
+
+    border-color:
+        #38d996;
+
+    box-shadow:
+        0 0 22px
+        rgba(56,217,150,.18);
+
+}
+
+.ring-node.down {
+
+    border-color:
+        #ff5f6d;
+
+    box-shadow:
+        0 0 22px
+        rgba(255,95,109,.18);
+
+}
+
+.ring-node:nth-child(1) {
+
+    top:
+        -35px;
+
+    left:
+        50%;
+
+    transform:
+        translateX(-50%);
+
+}
+
+.ring-node:nth-child(2) {
+
+    bottom:
+        20px;
+
+    left:
+        -30px;
+
+}
+
+.ring-node:nth-child(3) {
+
+    bottom:
+        20px;
+
+    right:
+        -30px;
+
+}
+
+
+/* =========================
+   CACHE CONTROL
+========================= */
+
+.form-grid {
+
+    display:
+        grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap:
+        10px;
+
+}
+
+input {
+
+    width:
+        100%;
+
+    padding:
+        12px;
+
+    border:
+        1px solid #273247;
+
+    border-radius:
+        9px;
+
+    outline:
+        none;
+
+    background:
+        #080d17;
+
+    color:
+        white;
+
+}
+
+input:focus {
+
+    border-color:
+        #4f6b99;
+
+}
+
+.full {
+
+    grid-column:
+        1 / -1;
+
+}
+
+.action-row {
+
+    display:
+        flex;
+
+    gap:
+        9px;
+
+    margin-top:
+        12px;
+
+}
+
+.primary {
+
+    background:
+        #315db8;
+
+}
+
+.primary:hover {
+
+    background:
+        #3d6fd5;
+
+}
+
+.danger {
+
+    background:
+        #632833;
+
+}
+
+
+/* =========================
+   STATS
+========================= */
+
+.stats {
+
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap:
+        12px;
+
+}
+
+.stat {
+
+    padding:
+        15px;
+
+    border:
+        1px solid #20293a;
+
+    background:
+        #080d17;
+
+    border-radius:
+        11px;
+
+}
+
+.stat-label {
+
+    color:
+        #68748a;
+
+    font-size:
+        12px;
+
+}
+
+.stat-value {
+
+    font-size:
+        24px;
+
+    font-weight:
+        700;
+
+    margin-top:
+        5px;
+
+}
+
+
+/* =========================
+   EVENTS
+========================= */
+
+.events {
+
+    max-height:
+        390px;
+
+    overflow:
+        auto;
+
+}
+
+.event {
+
+    display:
+        flex;
+
+    gap:
+        12px;
+
+    padding:
+        11px 0;
+
+    border-bottom:
+        1px solid #1a2231;
+
+}
+
+.event:last-child {
+
+    border-bottom:
+        none;
+
+}
+
+.event-time {
+
+    color:
+        #566279;
+
+    font-size:
+        11px;
+
+    min-width:
+        70px;
+
+}
+
+.event-type {
+
+    min-width:
+        65px;
+
+    font-size:
+        11px;
+
+    font-weight:
+        700;
+
+    color:
+        #7fa7ff;
+
+}
+
+.event-message {
+
+    font-size:
+        13px;
+
+    color:
+        #c5ccda;
+
+}
+
+
+/* =========================
+   KEY RESULT
+========================= */
+
+.result {
+
+    margin-top:
+        15px;
+
+    padding:
+        14px;
+
+    border:
+        1px solid #253047;
+
+    border-radius:
+        10px;
+
+    background:
+        #080d17;
+
+    white-space:
+        pre-wrap;
+
+    font-family:
+        monospace;
+
+    font-size:
+        13px;
+
+    min-height:
+        60px;
+
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1000px) {
+
+    .nodes {
+
+        grid-template-columns:
+            1fr;
+
+    }
+
+    .main-grid {
+
+        grid-template-columns:
+            1fr;
+
+    }
+
+}
+
+@media (max-width: 650px) {
+
+    .header {
+
+        flex-direction:
+            column;
+
+        align-items:
+            flex-start;
+
+        gap:
+            15px;
+
+    }
+
+    .stats {
+
+        grid-template-columns:
+            1fr 1fr;
+
+    }
+
+    .form-grid {
+
+        grid-template-columns:
+            1fr;
+
+    }
+
+    .full {
+
+        grid-column:
+            auto;
+
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+
+<!-- =========================================================
+     HEADER
+========================================================= -->
+
+<header class="header">
+
+    <div class="title">
+
+        <h1>
+            Self-Healing Distributed Cache
+        </h1>
+
+        <p>
+            Consistent hashing · Replication · Failure detection · Recovery
+        </p>
+
+    </div>
+
+    <div class="system-status">
+
+        <span
+            id="systemDot"
+            class="dot"
+        ></span>
+
+        <span id="systemStatus">
+            Checking system...
+        </span>
+
+    </div>
+
+</header>
+
+
+<!-- =========================================================
+     NODES
+========================================================= -->
+
+<section>
+
+    <h2 class="section-title">
+        Cache Nodes
+    </h2>
+
+    <div
+        id="nodes"
+        class="nodes"
+    >
+
+        <!-- JS inserts nodes -->
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     MAIN GRID
+========================================================= -->
+
+<div class="main-grid">
+
+
+<!-- =========================================================
+     LEFT COLUMN
+========================================================= -->
+
+<div class="stack">
+
+
+    <!-- TOPOLOGY -->
+
+    <section class="card topology">
+
+        <h2 class="section-title">
+            Distributed Topology
+        </h2>
+
+        <div class="ring">
+
+            <div class="ring-center">
+
+                <strong>
+                    Hash Ring
+                </strong>
+
+                <span>
+                    100 virtual nodes / node
+                </span>
+
+            </div>
+
+            <div
+                id="ring3001"
+                class="ring-node"
+            >
+                N1
+                <small>
+                    3001
+                </small>
+            </div>
+
+            <div
+                id="ring3002"
+                class="ring-node"
+            >
+                N2
+                <small>
+                    3002
+                </small>
+            </div>
+
+            <div
+                id="ring3003"
+                class="ring-node"
+            >
+                N3
+                <small>
+                    3003
+                </small>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- CACHE CONTROL -->
+
+    <section class="card">
+
+        <h2 class="section-title">
+            Cache Operations
+        </h2>
+
+        <div class="form-grid">
+
+            <input
+                id="key"
+                placeholder="Key e.g. user:1001"
+            >
+
+            <input
+                id="value"
+                placeholder="Value e.g. Umang"
+            >
+
+            <input
+                id="ttl"
+                type="number"
+                placeholder="TTL milliseconds (optional)"
+            >
+
+        </div>
+
+        <div class="action-row">
+
+            <button
+                class="primary"
+                onclick="setCache()"
+            >
+                SET
+            </button>
+
+            <button
+                onclick="getCache()"
+            >
+                GET
+            </button>
+
+            <button
+                class="danger"
+                onclick="deleteCache()"
+            >
+                DELETE
+            </button>
+
+        </div>
+
+        <div
+            id="result"
+            class="result"
+        >
+            Result will appear here...
+        </div>
+
+    </section>
+
+
+    <!-- STATS -->
+
+    <section class="card">
+
+        <h2 class="section-title">
+            Global Cache Statistics
+        </h2>
+
+        <div class="stats">
+
+            <div class="stat">
+
+                <div class="stat-label">
+                    Hits
+                </div>
+
+                <div
+                    id="hits"
+                    class="stat-value"
+                >
+                    0
+                </div>
+
+            </div>
+
+
+            <div class="stat">
+
+                <div class="stat-label">
+                    Misses
+                </div>
+
+                <div
+                    id="misses"
+                    class="stat-value"
+                >
+                    0
+                </div>
+
+            </div>
+
+
+            <div class="stat">
+
+                <div class="stat-label">
+                    Evictions
+                </div>
+
+                <div
+                    id="evictions"
+                    class="stat-value"
+                >
+                    0
+                </div>
+
+            </div>
+
+
+            <div class="stat">
+
+                <div class="stat-label">
+                    Cached Entries
+                </div>
+
+                <div
+                    id="size"
+                    class="stat-value"
+                >
+                    0
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+<!-- =========================================================
+     RIGHT COLUMN
+========================================================= -->
+
+<div class="stack">
+
+
+    <!-- EVENTS -->
+
+    <section class="card">
+
+        <h2 class="section-title">
+            System Events
+        </h2>
+
+        <div
+            id="events"
+            class="events"
+        >
+
+            Loading events...
+
+        </div>
+
+    </section>
+
+
+    <!-- ARCHITECTURE -->
+
+    <section class="card">
+
+        <h2 class="section-title">
+            Self-Healing Flow
+        </h2>
+
+        <div
+            style="
+                color:#8a95a9;
+                line-height:1.9;
+                font-size:14px;
+            "
+        >
+
+            <div>
+                ① Client sends request
+            </div>
+
+            <div>
+                ↓
+            </div>
+
+            <div>
+                ② Consistent hash selects nodes
+            </div>
+
+            <div>
+                ↓
+            </div>
+
+            <div>
+                ③ Data replicated to 2 nodes
+            </div>
+
+            <div>
+                ↓
+            </div>
+
+            <div>
+                ④ Health checker detects failure
+            </div>
+
+            <div>
+                ↓
+            </div>
+
+            <div>
+                ⑤ Failed node removed from ring
+            </div>
+
+            <div>
+                ↓
+            </div>
+
+            <div>
+                ⑥ Node recovers
+            </div>
+
+            <div>
+                ↓
+            </div>
+
+            <div>
+                ⑦ Node re-added
+            </div>
+
+            <div>
+                ↓
+            </div>
+
+            <div>
+                ⑧ Data rebalanced
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+
+// ============================================================
+// CONFIG
+// ============================================================
+
+const NODE_PORTS = [
+    3001,
+    3002,
+    3003
+];
+
+
+// ============================================================
+// PREVIOUS NODE STATES
+// ============================================================
+
+const previousStates = {};
+
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function escapeHtml(value) {
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+}
+
+
+function formatTime(timestamp) {
+
+    return new Date(timestamp)
+        .toLocaleTimeString();
+
+}
+
+
+// ============================================================
+// LOAD NODES
+// ============================================================
+
+async function loadNodes() {
+
+    try {
+
+        const response =
+            await fetch("/api/nodes");
+
+        const data =
+            await response.json();
+
+        renderNodes(data.nodes);
+
+        updateSystemStatus(
+            data.nodes
+        );
+
+        for (const node of data.nodes) {
+
+            const port =
+                node.port;
+
+            const oldState =
+                previousStates[port];
+
+            const newState =
+                node.status;
+
+            if (
+                oldState &&
+                oldState !== newState
+            ) {
+
+                if (
+                    newState === "down"
+                ) {
+
+                    addLocalEvent(
+                        "FAILURE",
+                        `Node ${port} went DOWN`
+                    );
+
+                }
+
+                if (
+                    newState === "healthy" &&
+                    oldState === "down"
+                ) {
+
+                    addLocalEvent(
+                        "RECOVERY",
+                        `Node ${port} RECOVERED`
+                    );
+
+                    addLocalEvent(
+                        "REBALANCE",
+                        `Node ${port} rejoined the cluster`
+                    );
+
+                }
+
+            }
+
+            previousStates[port] =
+                newState;
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Node status error:",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// RENDER NODES
+// ============================================================
+
+function renderNodes(nodes) {
+
+    const container =
+        document.getElementById(
+            "nodes"
+        );
+
+    container.innerHTML = "";
+
+    for (const node of nodes) {
+
+        const healthy =
+            node.status === "healthy";
+
+        const html = `
+
+            <div class="card node-card">
+
+                <div class="node-top">
+
+                    <div>
+
+                        <div class="node-name">
+                            Node ${node.port}
+                        </div>
+
+                        <div class="node-port">
+                            ${node.container}
+                            · localhost:${node.port}
+                        </div>
+
+                    </div>
+
+                    <div class="status">
+
+                        <span
+                            class="node-status-dot
+                            ${healthy ? "" : "down"}"
+                        ></span>
+
+                        ${healthy
+                            ? "HEALTHY"
+                            : "DOWN"}
+
+                    </div>
+
+                </div>
+
+
+                <div class="node-info">
+
+                    <div class="info-box">
+
+                        <div class="info-label">
+                            Container
+                        </div>
+
+                        <div class="info-value">
+                            ${node.container}
+                        </div>
+
+                    </div>
+
+
+                    <div class="info-box">
+
+                        <div class="info-label">
+                            Port
+                        </div>
+
+                        <div class="info-value">
+                            ${node.port}
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="node-actions">
+
+                    <button
+                        class="stop-btn"
+                        onclick="stopNode(${node.port})"
+                        ${healthy ? "" : "disabled"}
+                    >
+                        Stop Node
+                    </button>
+
+
+                    <button
+                        class="start-btn"
+                        onclick="startNode(${node.port})"
+                        ${healthy ? "disabled" : ""}
+                    >
+                        Start Node
+                    </button>
+
+                </div>
+
+            </div>
+
+        `;
+
+        container.insertAdjacentHTML(
+            "beforeend",
+            html
+        );
+
+        updateRingNode(
+            node.port,
+            healthy
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// RING STATUS
+// ============================================================
+
+function updateRingNode(
+    port,
+    healthy
+) {
+
+    const element =
+        document.getElementById(
+            `ring${port}`
+        );
+
+    if (!element) return;
+
+    element.classList.remove(
+        "healthy",
+        "down"
+    );
+
+    element.classList.add(
+        healthy
+            ? "healthy"
+            : "down"
+    );
+
+}
+
+
+// ============================================================
+// SYSTEM STATUS
+// ============================================================
+
+function updateSystemStatus(
+    nodes
+) {
+
+    const healthy =
+        nodes.filter(
+            n =>
+                n.status === "healthy"
+        ).length;
+
+    const dot =
+        document.getElementById(
+            "systemDot"
+        );
+
+    const status =
+        document.getElementById(
+            "systemStatus"
+        );
+
+    if (healthy === nodes.length) {
+
+        dot.className =
+            "dot";
+
+        status.textContent =
+            "All nodes healthy";
+
+    } else if (healthy === 0) {
+
+        dot.className =
+            "dot down";
+
+        status.textContent =
+            "Cluster unavailable";
+
+    } else {
+
+        dot.className =
+            "dot warning";
+
+        status.textContent =
+            `${healthy}/${nodes.length} nodes healthy`;
+
+    }
+
+}
+
+
+// ============================================================
+// STOP NODE
+// ============================================================
+
+async function stopNode(port) {
+
+    addLocalEvent(
+        "ACTION",
+        `Stopping node ${port}...`
+    );
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/nodes/${port}/stop`,
+                {
+                    method: "POST"
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Failed to stop node"
+            );
+
+        }
+
+        addLocalEvent(
+            "NODE",
+            `Docker node ${port} stopped`
+        );
+
+        setTimeout(
+            loadNodes,
+            1000
+        );
+
+    } catch (error) {
+
+        addLocalEvent(
+            "ERROR",
+            error.message
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// START NODE
+// ============================================================
+
+async function startNode(port) {
+
+    addLocalEvent(
+        "ACTION",
+        `Starting node ${port}...`
+    );
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/nodes/${port}/start`,
+                {
+                    method: "POST"
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Failed to start node"
+            );
+
+        }
+
+        addLocalEvent(
+            "NODE",
+            `Docker node ${port} started`
+        );
+
+        setTimeout(
+            loadNodes,
+            1000
+        );
+
+    } catch (error) {
+
+        addLocalEvent(
+            "ERROR",
+            error.message
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// SET CACHE
+// ============================================================
+
+async function setCache() {
+
+    const key =
+        document.getElementById(
+            "key"
+        ).value.trim();
+
+    const value =
+        document.getElementById(
+            "value"
+        ).value;
+
+    const ttlInput =
+        document.getElementById(
+            "ttl"
+        ).value;
+
+    if (!key) {
+
+        showResult(
+            "Enter a key."
+        );
+
+        return;
+    }
+
+    if (!value) {
+
+        showResult(
+            "Enter a value."
+        );
+
+        return;
+    }
+
+    const body = {
+        value
+    };
+
+    if (ttlInput) {
+
+        body.ttl =
+            Number(ttlInput);
+
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/cache/${encodeURIComponent(key)}`,
+                {
+                    method: "PUT",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(body)
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error
+            );
+
+        }
+
+        showResult(
+            JSON.stringify(
+                data,
+                null,
+                2
+            )
+        );
+
+        addLocalEvent(
+            "CACHE",
+            `SET ${key}`
+        );
+
+        loadStats();
+
+    } catch (error) {
+
+        showResult(
+            `ERROR: ${error.message}`
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// GET CACHE
+// ============================================================
+
+async function getCache() {
+
+    const key =
+        document.getElementById(
+            "key"
+        ).value.trim();
+
+    if (!key) {
+
+        showResult(
+            "Enter a key."
+        );
+
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/cache/${encodeURIComponent(key)}`
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error
+            );
+
+        }
+
+        showResult(
+            JSON.stringify(
+                data,
+                null,
+                2
+            )
+        );
+
+        addLocalEvent(
+            "CACHE",
+            `GET ${key} → HIT`
+        );
+
+        loadStats();
+
+    } catch (error) {
+
+        showResult(
+            `ERROR: ${error.message}`
+        );
+
+        addLocalEvent(
+            "CACHE",
+            `GET ${key} → MISS`
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// DELETE CACHE
+// ============================================================
+
+async function deleteCache() {
+
+    const key =
+        document.getElementById(
+            "key"
+        ).value.trim();
+
+    if (!key) {
+
+        showResult(
+            "Enter a key."
+        );
+
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/cache/${encodeURIComponent(key)}`,
+                {
+                    method: "DELETE"
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error
+            );
+
+        }
+
+        showResult(
+            JSON.stringify(
+                data,
+                null,
+                2
+            )
+        );
+
+        addLocalEvent(
+            "CACHE",
+            `DELETE ${key}`
+        );
+
+        loadStats();
+
+    } catch (error) {
+
+        showResult(
+            `ERROR: ${error.message}`
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// RESULT
+// ============================================================
+
+function showResult(
+    text
+) {
+
+    document.getElementById(
+        "result"
+    ).textContent =
+        text;
+
+}
+
+
+// ============================================================
+// STATS
+// ============================================================
+
+async function loadStats() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/stats"
+            );
+
+        const data =
+            await response.json();
+
+        document.getElementById(
+            "hits"
+        ).textContent =
+            data.totals.hits;
+
+        document.getElementById(
+            "misses"
+        ).textContent =
+            data.totals.misses;
+
+        document.getElementById(
+            "evictions"
+        ).textContent =
+            data.totals.evictions;
+
+        document.getElementById(
+            "size"
+        ).textContent =
+            data.totals.size;
+
+    } catch {
+
+        // Ignore while nodes are down
+
+    }
+
+}
+
+
+// ============================================================
+// EVENTS
+// ============================================================
+
+async function loadEvents() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/events"
+            );
+
+        const data =
+            await response.json();
+
+        renderEvents(
+            data.events
+        );
+
+    } catch {
+
+        // Ignore
+
+    }
+
+}
+
+
+function addLocalEvent(
+    type,
+    message
+) {
+
+    const container =
+        document.getElementById(
+            "events"
+        );
+
+    const event =
+        document.createElement(
+            "div"
+        );
+
+    event.className =
+        "event";
+
+    event.innerHTML = `
+
+        <div class="event-time">
+            ${new Date().toLocaleTimeString()}
+        </div>
+
+        <div class="event-type">
+            ${escapeHtml(type)}
+        </div>
+
+        <div class="event-message">
+            ${escapeHtml(message)}
+        </div>
+
+    `;
+
+    container.prepend(
+        event
+    );
+
+}
+
+
+function renderEvents(
+    events
+) {
+
+    const container =
+        document.getElementById(
+            "events"
+        );
+
+    if (!events.length) {
+
+        container.innerHTML =
+            `<div style="color:#69758b">
+                No events yet.
+            </div>`;
+
+        return;
+    }
+
+    container.innerHTML =
+        events
+            .map(
+                event => `
+
+                    <div class="event">
+
+                        <div class="event-time">
+                            ${formatTime(
+                                event.timestamp
+                            )}
+                        </div>
+
+                        <div class="event-type">
+                            ${escapeHtml(
+                                event.type
+                            )}
+                        </div>
+
+                        <div class="event-message">
+                            ${escapeHtml(
+                                event.message
+                            )}
+                        </div>
+
+                    </div>
+
+                `
+            )
+            .join("");
+
+}
+
+
+// ============================================================
+// INITIAL LOAD
+// ============================================================
+
+async function refresh() {
+
+    await loadNodes();
+
+    await loadStats();
+
+    await loadEvents();
+
+}
+
+
+// ============================================================
+// POLLING
+// ============================================================
+
+refresh();
+
+setInterval(
+    refresh,
+    3000
+);
+
+</script>
+
+</body>
+
+</html>

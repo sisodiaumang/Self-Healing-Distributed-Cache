@@ -1,0 +1,22 @@
+{
+  "name": "self_healing_distributed_cache",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "module": "commonjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1",
+    "http": "^0.0.1-security",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.4.0"
+  }
+}
