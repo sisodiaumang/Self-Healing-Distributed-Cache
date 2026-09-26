@@ -141,16 +141,27 @@ app.post(
     "/api/nodes/:port/stop",
     (req, res) => {
 
-        if (process.env.VERCEL || process.env.STANDALONE) {
+        if (process.env.VERCEL) {
             res.status(403).json({
-                error: "Cannot control Docker from Cloud/Standalone environments"
+                error: "Cannot control Docker from Vercel"
             });
-            addEvent("ERROR", "Cannot control node: Cloud/Standalone environment does not support Docker");
+            addEvent("ERROR", "Cannot stop node: Vercel environment does not support Docker");
             return;
         }
 
-        const port =
-            req.params.port;
+        const port = req.params.port;
+
+        if (process.env.STANDALONE) {
+            const standaloneNodes = (global as any).standaloneNodes;
+            if (standaloneNodes && standaloneNodes[port]) {
+                standaloneNodes[port].stop();
+                addEvent("NODE", `Stopping node ${port} (standalone mode)`);
+                res.status(200).json({ message: "Node stopped" });
+            } else {
+                res.status(400).json({ error: "Node not found in standalone mode" });
+            }
+            return;
+        }
 
         const container =
             containers[port];
@@ -228,16 +239,27 @@ app.post(
     "/api/nodes/:port/start",
     (req, res) => {
 
-        if (process.env.VERCEL || process.env.STANDALONE) {
+        if (process.env.VERCEL) {
             res.status(403).json({
-                error: "Cannot control Docker from Cloud/Standalone environments"
+                error: "Cannot control Docker from Vercel"
             });
-            addEvent("ERROR", "Cannot control node: Cloud/Standalone environment does not support Docker");
+            addEvent("ERROR", "Cannot start node: Vercel environment does not support Docker");
             return;
         }
 
-        const port =
-            req.params.port;
+        const port = req.params.port;
+
+        if (process.env.STANDALONE) {
+            const standaloneNodes = (global as any).standaloneNodes;
+            if (standaloneNodes && standaloneNodes[port]) {
+                standaloneNodes[port].start();
+                addEvent("NODE", `Starting node ${port} (standalone mode)`);
+                res.status(200).json({ message: "Node started" });
+            } else {
+                res.status(400).json({ error: "Node not found in standalone mode" });
+            }
+            return;
+        }
 
         const container =
             containers[port];

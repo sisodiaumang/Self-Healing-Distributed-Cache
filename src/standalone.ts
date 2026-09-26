@@ -8,6 +8,12 @@ const node1 = new CacheNodeServer(3001, 100);
 const node2 = new CacheNodeServer(3002, 100);
 const node3 = new CacheNodeServer(3003, 100);
 
+(global as any).standaloneNodes = {
+    "3001": node1,
+    "3002": node2,
+    "3003": node3
+};
+
 node1.start();
 node2.start();
 node3.start();

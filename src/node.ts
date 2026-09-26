@@ -210,19 +210,30 @@ export class CacheNodeServer {
     }
 
 
-    start(): void {
+    private server: any;
 
-        this.app.listen(
+    start(): void {
+        if (this.server) {
+            console.log(`Cache node already running on port ${this.port}`);
+            return;
+        }
+
+        this.server = this.app.listen(
             this.port,
             () => {
-
                 console.log(
                     `Cache node running on port ${this.port}`
                 );
-
             }
         );
+    }
 
+    stop(): void {
+        if (this.server) {
+            this.server.close();
+            this.server = null;
+            console.log(`Cache node on port ${this.port} stopped`);
+        }
     }
 
 }
