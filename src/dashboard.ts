@@ -91,8 +91,8 @@ app.get("/", (req, res) => {
 
     res.sendFile(
         path.join(
-            process.cwd(),
-            "dashboard.html"
+            __dirname,
+            "../dashboard.html"
         )
     );
 
@@ -140,6 +140,14 @@ app.get(
 app.post(
     "/api/nodes/:port/stop",
     (req, res) => {
+
+        if (process.env.VERCEL) {
+            res.status(403).json({
+                error: "Cannot control Docker from Vercel"
+            });
+            addEvent("ERROR", "Cannot stop node: Vercel environment does not support Docker");
+            return;
+        }
 
         const port =
             req.params.port;
@@ -219,6 +227,14 @@ app.post(
 app.post(
     "/api/nodes/:port/start",
     (req, res) => {
+
+        if (process.env.VERCEL) {
+            res.status(403).json({
+                error: "Cannot control Docker from Vercel"
+            });
+            addEvent("ERROR", "Cannot start node: Vercel environment does not support Docker");
+            return;
+        }
 
         const port =
             req.params.port;
