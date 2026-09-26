@@ -12,11 +12,13 @@ const DASHBOARD_PORT = 4000;
 // CACHE NODES
 // ============================================================
 
-const nodes = [
-    "http://localhost:3001",
-    "http://localhost:3002",
-    "http://localhost:3003"
-];
+const nodes = process.env.CACHE_NODES
+    ? process.env.CACHE_NODES.split(",")
+    : [
+          "http://localhost:3001",
+          "http://localhost:3002",
+          "http://localhost:3003"
+      ];
 
 // Docker container mapping
 const containers: Record<string, string> = {
@@ -89,8 +91,8 @@ app.get("/", (req, res) => {
 
     res.sendFile(
         path.join(
-            __dirname,
-            "../dashboard.html"
+            process.cwd(),
+            "dashboard.html"
         )
     );
 
@@ -741,45 +743,49 @@ app.get(
 // START SERVER
 // ============================================================
 
-app.listen(
-    DASHBOARD_PORT,
-    "127.0.0.1",
-    () => {
+if (!process.env.VERCEL) {
+    app.listen(
+        DASHBOARD_PORT,
+        "127.0.0.1",
+        () => {
 
-        addEvent(
-            "SYSTEM",
-            `Dashboard started on port ${DASHBOARD_PORT}`
-        );
+            addEvent(
+                "SYSTEM",
+                `Dashboard started on port ${DASHBOARD_PORT}`
+            );
 
-        console.log("");
-        console.log(
-            "=========================================="
-        );
-        console.log(
-            " Self-Healing Distributed Cache"
-        );
-        console.log(
-            " Dashboard Server"
-        );
-        console.log(
-            "=========================================="
-        );
-        console.log(
-            ` Dashboard: http://localhost:${DASHBOARD_PORT}`
-        );
-        console.log(
-            " Nodes:     3001, 3002, 3003"
-        );
-        console.log(
-            " Replicas:  2"
-        );
-        console.log(
-            " Health:    every 5 seconds"
-        );
-        console.log(
-            "=========================================="
-        );
-        console.log("");
+            console.log("");
+            console.log(
+                "=========================================="
+            );
+            console.log(
+                " Self-Healing Distributed Cache"
+            );
+            console.log(
+                " Dashboard Server"
+            );
+            console.log(
+                "=========================================="
+            );
+            console.log(
+                ` Dashboard: http://localhost:${DASHBOARD_PORT}`
+            );
+            console.log(
+                " Nodes:     3001, 3002, 3003"
+            );
+            console.log(
+                " Replicas:  2"
+            );
+            console.log(
+                " Health:    every 5 seconds"
+            );
+            console.log(
+                "=========================================="
+            );
+            console.log("");
 
-    }
-);
+        }
+    );
+}
+
+export default app;
