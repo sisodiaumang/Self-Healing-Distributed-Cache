@@ -91,52 +91,38 @@ export class CacheRouter {
             );
         }
 
-        let successCount = 0;
-
-        for (const node of nodes) {
+        const promises = nodes.map(async (node) => {
             try {
                 const response = await fetch(
                     `${node}/cache/${encodeURIComponent(key)}`,
                     {
                         method: "PUT",
-
                         headers: {
-                            "Content-Type":
-                                "application/json"
+                            "Content-Type": "application/json"
                         },
-
-                        body: JSON.stringify({
-                            value,
-                            ttl
-                        })
+                        body: JSON.stringify({ value, ttl })
                     }
                 );
 
                 await response.text();
 
                 if (!response.ok) {
-                    console.log(
-                        `${node} -> FAILED (${response.status})`
-                    );
-
-                    continue;
+                    console.log(`${node} -> FAILED (${response.status})`);
+                    return false;
                 }
 
-                console.log(
-                    `${node} -> STORED`
-                );
-
-                successCount++;
+                console.log(`${node} -> STORED`);
+                return true;
 
             } catch {
-
-                console.log(
-                    `${node} -> DOWN`
-                );
-
+                console.log(`${node} -> DOWN`);
                 this.removeNode(node);
+                return false;
             }
-        }
+        });
+
+        const results = await Promise.all(promises);
+        const successCount = results.filter(Boolean).length;
 
         if (successCount === 0) {
             throw new Error(
@@ -164,38 +150,38 @@ export class CacheRouter {
             );
         }
 
-        for (const node of nodes) {
-
+        const promises = nodes.map(async (node) => {
             try {
                 const response = await fetch(
                     `${node}/cache/${encodeURIComponent(key)}`
                 );
 
                 if (response.ok) {
-
-                    const data =
-                        await response.json();
-
+                    const data = await response.json();
                     return data.value;
                 }
 
                 await response.text();
-
+                
                 if (response.status === 404) {
-                    continue;
+                    throw new Error("404");
                 }
-
-            } catch {
-
-                console.log(
-                    `Node ${node} unavailable`
-                );
-
-                this.removeNode(node);
+                throw new Error("Failed");
+                
+            } catch (err: any) {
+                if (err.message !== "404") {
+                    console.log(`Node ${node} unavailable`);
+                    this.removeNode(node);
+                }
+                throw err;
             }
-        }
+        });
 
-        return undefined;
+        try {
+            return await Promise.any(promises);
+        } catch {
+            return undefined;
+        }
     }
 
     // ========================================
@@ -217,36 +203,23 @@ export class CacheRouter {
             );
         }
 
-        let deleted = false;
-
-        for (const node of nodes) {
-
+        const promises = nodes.map(async (node) => {
             try {
-
                 const response = await fetch(
                     `${node}/cache/${encodeURIComponent(key)}`,
-                    {
-                        method: "DELETE"
-                    }
+                    { method: "DELETE" }
                 );
-
                 await response.text();
-
-                if (response.ok) {
-                    deleted = true;
-                }
-
+                return response.ok;
             } catch {
-
-                console.log(
-                    `Node ${node} unavailable`
-                );
-
+                console.log(`Node ${node} unavailable`);
                 this.removeNode(node);
+                return false;
             }
-        }
+        });
 
-        return deleted;
+        const results = await Promise.all(promises);
+        return results.some(Boolean);
     }
 
     // ========================================
@@ -345,79 +318,38 @@ export class CacheRouter {
                 const entries =
                     await response.json();
 
-                for (
-                    const entry of entries
-                ) {
-
-                    // Don't process the same key twice
-                    if (
-                        syncedKeys.has(entry.key)
-                    ) {
-                        continue;
+                const rebalancePromises = entries.map(async (entry: any) => {
+                    if (syncedKeys.has(entry.key)) {
+                        return;
                     }
 
-                    /*
-                     * The node has already been
-                     * added to the hash ring.
-                     *
-                     * Check whether this node
-                     * should now contain this key.
-                     */
-
-                    const replicas =
-                        this.ring.getNodes(
-                            entry.key,
-                            this.replicationFactor
-                        );
-
-                    if (
-                        !replicas.includes(node)
-                    ) {
-                        continue;
+                    const replicas = this.ring.getNodes(entry.key, this.replicationFactor);
+                    if (!replicas.includes(node)) {
+                        return;
                     }
 
                     try {
-
-                        const writeResponse =
-                            await fetch(
-                                `${node}/cache/${encodeURIComponent(entry.key)}`,
-                                {
-                                    method: "PUT",
-
-                                    headers: {
-                                        "Content-Type":
-                                            "application/json"
-                                    },
-
-                                    body: JSON.stringify({
-                                        value: entry.value,
-                                        ttl: entry.ttl
-                                    })
-                                }
-                            );
+                        const writeResponse = await fetch(
+                            `${node}/cache/${encodeURIComponent(entry.key)}`,
+                            {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ value: entry.value, ttl: entry.ttl })
+                            }
+                        );
 
                         await writeResponse.text();
 
-                        if (
-                            writeResponse.ok
-                        ) {
-
-                            console.log(
-                                `${entry.key} -> moved to ${node}`
-                            );
-
-                            syncedKeys.add(
-                                entry.key
-                            );
+                        if (writeResponse.ok) {
+                            console.log(`${entry.key} -> moved to ${node}`);
+                            syncedKeys.add(entry.key);
                         }
-
                     } catch {
-
-                        console.log(
-                            `Failed to move ${entry.key} to ${node}`
-                        );
+                        console.log(`Failed to move ${entry.key} to ${node}`);
                     }
-                }
+                });
+
+                await Promise.all(rebalancePromises);
 
                 /*
                  * We successfully got a snapshot
@@ -465,61 +397,31 @@ export class CacheRouter {
                 // 1. CHECK ACTIVE NODES
                 // ====================================
 
-                for (
-                    const node of [
-                        ...this.activeNodes
-                    ]
-                ) {
-
-                    const healthy =
-                        await this.checkNode(node);
-
+                await Promise.all([...this.activeNodes].map(async (node) => {
+                    const healthy = await this.checkNode(node);
                     if (!healthy) {
-
-                        console.log(
-                            `${node} -> DOWN`
-                        );
-
+                        console.log(`${node} -> DOWN`);
                         this.removeNode(node);
                     }
-                }
+                }));
 
                 // ====================================
                 // 2. CHECK RECOVERED NODES
                 // ====================================
 
-                for (
-                    const node of [
-                        ...this.knownNodes
-                    ]
-                ) {
-
-                    // Already active
-                    if (
-                        this.activeNodes.has(node)
-                    ) {
-                        continue;
+                await Promise.all([...this.knownNodes].map(async (node) => {
+                    if (this.activeNodes.has(node)) {
+                        return;
                     }
 
-                    const healthy =
-                        await this.checkNode(node);
-
-                    // Still down
-                    if (!healthy) {
-                        continue;
+                    const healthy = await this.checkNode(node);
+                    
+                    if (healthy) {
+                        console.log(`${node} -> RECOVERED`);
+                        this.addNode(node);
+                        await this.rebalanceNode(node);
                     }
-
-                    // Node came back
-                    console.log(
-                        `${node} -> RECOVERED`
-                    );
-
-                    // Add it back to the ring
-                    this.addNode(node);
-
-                    // Repair/rebalance its data
-                    await this.rebalanceNode(node);
-                }
+                }));
 
             }, interval);
     }
