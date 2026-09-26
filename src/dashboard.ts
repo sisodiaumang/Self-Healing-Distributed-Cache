@@ -141,11 +141,11 @@ app.post(
     "/api/nodes/:port/stop",
     (req, res) => {
 
-        if (process.env.VERCEL) {
+        if (process.env.VERCEL || process.env.STANDALONE) {
             res.status(403).json({
-                error: "Cannot control Docker from Vercel"
+                error: "Cannot control Docker from Cloud/Standalone environments"
             });
-            addEvent("ERROR", "Cannot stop node: Vercel environment does not support Docker");
+            addEvent("ERROR", "Cannot control node: Cloud/Standalone environment does not support Docker");
             return;
         }
 
@@ -228,11 +228,11 @@ app.post(
     "/api/nodes/:port/start",
     (req, res) => {
 
-        if (process.env.VERCEL) {
+        if (process.env.VERCEL || process.env.STANDALONE) {
             res.status(403).json({
-                error: "Cannot control Docker from Vercel"
+                error: "Cannot control Docker from Cloud/Standalone environments"
             });
-            addEvent("ERROR", "Cannot start node: Vercel environment does not support Docker");
+            addEvent("ERROR", "Cannot control node: Cloud/Standalone environment does not support Docker");
             return;
         }
 
@@ -759,7 +759,7 @@ app.get(
 // START SERVER
 // ============================================================
 
-if (!process.env.VERCEL) {
+if (!process.env.VERCEL && !process.env.STANDALONE) {
     app.listen(
         DASHBOARD_PORT,
         "127.0.0.1",
