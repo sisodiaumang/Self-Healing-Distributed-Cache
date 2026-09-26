@@ -483,7 +483,7 @@ self_healing_distributed_cache/
 │   ├── node.ts
 │   ├── router.ts
 │
-├── dashboard.html
+├── index.html
 ├── Dockerfile
 ├── docker-compose.yml
 ├── .dockerignore
